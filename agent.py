@@ -117,6 +117,17 @@ class CodingAgent:
             )
         return self.client
 
+    @staticmethod
+    def _extract_reasoning(obj) -> str:
+        """Extract reasoning_content from an OpenAI response object."""
+        if obj is None:
+            return ""
+        rc = getattr(obj, "reasoning_content", None)
+        if rc:
+            return rc
+        extra = getattr(obj, "model_extra", None) or {}
+        return extra.get("reasoning_content", "") or ""
+
     def _parse_tool_calls(self, choice) -> list[dict]:
         """Extract tool calls from an OpenAI chat completion choice."""
         if not choice.message.tool_calls:
@@ -148,6 +159,7 @@ class CodingAgent:
         for m in msgs:
             role = m.get("role", "user")
             parts = m.get("parts", [])
+            reasoning = m.get("reasoning_content", "")
             content = ""
             tool_calls = None
             tool_call_id = None
@@ -166,12 +178,21 @@ class CodingAgent:
                     tool_call_id = f"call_{fr['name']}"
                     content = json.dumps(fr["response"])
 
+            msg = {"role": role}
             if tool_calls:
-                result.append({"role": role, "content": content or None, "tool_calls": tool_calls})
+                msg["content"] = content or None
+                msg["tool_calls"] = tool_calls
             elif tool_call_id:
-                result.append({"role": "tool", "tool_call_id": tool_call_id, "content": content})
+                msg["role"] = "tool"
+                msg["tool_call_id"] = tool_call_id
+                msg["content"] = content
             else:
-                result.append({"role": role, "content": content})
+                msg["content"] = content
+
+            if role == "assistant" and reasoning:
+                msg["reasoning_content"] = reasoning
+
+            result.append(msg)
         return result
 
     @staticmethod
@@ -188,8 +209,11 @@ class CodingAgent:
         """Process a message using Big Pickle via OpenCode Zen API. Yields dict events."""
         messages: list = []
 
-        def add_msg(role: str, parts: list):
-            messages.append({"role": role, "parts": parts})
+        def add_msg(role: str, parts: list, reasoning: str = ""):
+            msg = {"role": role, "parts": parts}
+            if reasoning:
+                msg["reasoning_content"] = reasoning
+            messages.append(msg)
 
         add_msg("user", [{"text": user_message}])
 
@@ -206,6 +230,7 @@ class CodingAgent:
 
                 if stream:
                     collected_text = ""
+                    collected_reasoning = ""
                     tool_calls_accum = {}
                     finish_reason = None
 
@@ -215,6 +240,10 @@ class CodingAgent:
                         delta = chunk.choices[0].delta
                         if not delta:
                             continue
+
+                        rc = self._extract_reasoning(delta)
+                        if rc:
+                            collected_reasoning += rc
 
                         if delta.content:
                             collected_text += delta.content
@@ -238,7 +267,7 @@ class CodingAgent:
 
                     if finish_reason == "tool_calls" and tool_calls_accum:
                         parts = self._accumulate_tool_calls(tool_calls_accum)
-                        add_msg("assistant", parts)
+                        add_msg("assistant", parts, collected_reasoning)
 
                         result_parts = []
                         for tc in [tool_calls_accum[i] for i in sorted(tool_calls_accum)]:
@@ -267,15 +296,17 @@ class CodingAgent:
                         yield {"type": "error", "content": "No response from model"}
                         return
 
+                    reasoning = self._extract_reasoning(choice.message)
+
                     if choice.message.content:
-                        add_msg("assistant", [{"text": choice.message.content}])
+                        add_msg("assistant", [{"text": choice.message.content}], reasoning)
                         yield {"type": "text", "content": choice.message.content}
                         yield {"type": "done"}
                         return
 
                     parts = self._parse_tool_calls(choice)
                     if parts:
-                        add_msg("assistant", parts)
+                        add_msg("assistant", parts, reasoning)
                         result_parts = []
                         for tc in choice.message.tool_calls:
                             try:
