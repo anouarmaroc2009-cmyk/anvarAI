@@ -106,18 +106,26 @@ class CodingAgent:
         ))
 
         while True:
-            response = self.client.models.generate_content(
-                model=config.MODEL,
-                contents=self.messages,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    tools=[self.tool_config],
-                    max_output_tokens=config.MAX_TOKENS,
-                ),
-            )
+            try:
+                response = self.client.models.generate_content(
+                    model=config.MODEL,
+                    contents=self.messages,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        tools=[self.tool_config],
+                        max_output_tokens=config.MAX_TOKENS,
+                    ),
+                )
+            except Exception as e:
+                return f"Gemini API error: {e}"
+
+            if not response.candidates:
+                feedback = response.prompt_feedback
+                reason = feedback.block_reason if feedback else "unknown"
+                return f"Response blocked by safety filters ({reason})"
 
             candidate = response.candidates[0]
-            if not candidate:
+            if not candidate.content or not candidate.content.parts:
                 break
 
             reply = candidate.content
@@ -131,10 +139,14 @@ class CodingAgent:
             for part in function_calls:
                 fc = part.function_call
                 handler = TOOL_MAP.get(fc.name)
-                try:
-                    result = handler(**{k: v for k, v in fc.args.items()})
-                except Exception as e:
-                    result = f"Error: {e}"
+                if not handler:
+                    result = f"Error: unknown tool '{fc.name}'"
+                else:
+                    try:
+                        args = {k: v for k, v in fc.args.items()}
+                        result = handler(**args)
+                    except Exception as e:
+                        result = f"Error executing {fc.name}: {e}"
                 result_parts.append(types.Part.from_function_response(
                     name=fc.name,
                     response={"result": str(result)},
@@ -142,8 +154,10 @@ class CodingAgent:
 
             self.messages.append(types.Content(role="user", parts=result_parts))
 
+        if response.text:
+            return response.text
         text_parts = [p.text for p in self.messages[-1].parts if p.text]
-        return "\n".join(text_parts)
+        return "\n".join(text_parts) if text_parts else "(no text response)"
 
     def get_history(self) -> list[dict]:
         cleaned = []

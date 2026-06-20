@@ -46,6 +46,13 @@ async def reset():
     return {"status": "conversation reset"}
 
 
+import os
+# Railway sets $PORT - use it if available
+_railway_port = os.environ.get("PORT")
+if _railway_port:
+    config.PORT = int(_railway_port)
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host=config.HOST, port=config.PORT, reload=True)
+    print(f"AI Coding Agent starting - Model: {config.MODEL} on port {config.PORT}")
+    uvicorn.run("main:app", host="0.0.0.0", port=config.PORT, reload=True)
