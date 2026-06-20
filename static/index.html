@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anvar AI - Coding Agent</title>
+<title>Anvar AI</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   @keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 33% { transform: translateY(-15px) rotate(1deg); } 66% { transform: translateY(-5px) rotate(-1deg); } }
@@ -117,13 +117,7 @@
   .empty .icon-wrap .icon { font-size: 32px; }
   .empty h2 { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
   .empty p { font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6; }
-  .empty .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
-  .empty .suggestions button {
-    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
-    font-size: 13px; padding: 7px 18px; border-radius: 20px; cursor: pointer;
-    transition: all .25s; position: relative; overflow: hidden;
-  }
-  .empty .suggestions button:hover { background: rgba(167,139,250,0.1); color: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+
   #input-area { position: relative; z-index: 1; padding: 12px 20px 16px; background: var(--surface); backdrop-filter: blur(24px); border-top: 1px solid var(--border); flex-shrink: 0; }
   #input-row { display: flex; gap: 10px; align-items: flex-end; max-width: 900px; margin: 0 auto; }
   #input {
@@ -203,13 +197,7 @@
   <div class="empty" id="emptyState">
     <div class="icon-wrap"><span class="icon">&#x1F916;</span></div>
     <h2>Anvar AI</h2>
-    <p>Coding agent. I can write code, run commands, search the web, and manage git repos.</p>
-    <div class="suggestions">
-      <button onclick="suggest('write a python prime number checker')">Prime checker</button>
-      <button onclick="suggest('list files')">List files</button>
-      <button onclick="suggest('search web for latest python news')">Search web</button>
-      <button onclick="suggest('create a simple express.js server')">Express server</button>
-    </div>
+    <p>Meet Anvar AI—a cutting-edge intelligence engineered for precision and performance. Developed by a visionary web developer and trader, Anvar AI is designed to streamline complex workflows and provide high-level analytical insights. It is the ultimate tool for those who demand efficiency and excellence in their digital projects and market navigation.</p>
   </div>
 </div>
 
@@ -396,23 +384,12 @@ function showTyping() {
 
 function removeTyping() { document.getElementById('typing')?.remove(); }
 
-function suggest(text) {
-  document.getElementById('input').value = text;
-  sendMessage();
-}
-
 function resetChat() {
   document.getElementById('chat').innerHTML = `
     <div class="empty" id="emptyState">
       <div class="icon-wrap"><span class="icon">&#x1F916;</span></div>
       <h2>Anvar AI</h2>
     <p>Meet Anvar AI—a cutting-edge intelligence engineered for precision and performance. Developed by a visionary web developer and trader, Anvar AI is designed to streamline complex workflows and provide high-level analytical insights. It is the ultimate tool for those who demand efficiency and excellence in their digital projects and market navigation.</p>
-      <div class="suggestions">
-        <button onclick="suggest('write a python prime number checker')">Prime checker</button>
-        <button onclick="suggest('list files')">List files</button>
-        <button onclick="suggest('search web for latest python news')">Search web</button>
-        <button onclick="suggest('create a simple express.js server')">Express server</button>
-      </div>
     </div>`;
   document.getElementById('input').focus();
 }
