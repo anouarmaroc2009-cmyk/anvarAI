@@ -158,9 +158,12 @@ When running commands, check output and handle errors appropriately."""
 
 class CodingAgent:
     def __init__(self):
-        self.client = genai.Client(api_key=config.GOOGLE_API_KEY)
+        self.client = None
         self.messages: list[types.Content] = []
-        self.tool_config = types.Tool(function_declarations=TOOL_DEFS)
+        self.tool_config = None
+        if config.GOOGLE_API_KEY:
+            self.client = genai.Client(api_key=config.GOOGLE_API_KEY)
+            self.tool_config = types.Tool(function_declarations=TOOL_DEFS)
 
     def process_message(self, user_message: str, stream: bool = False):
         self.messages.append(types.Content(
