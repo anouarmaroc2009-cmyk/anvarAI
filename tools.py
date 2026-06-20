@@ -1,6 +1,8 @@
-import subprocess
 import os
+import subprocess
 from pathlib import Path
+
+IS_VERCEL = os.environ.get("VERCEL", "") == "1"
 
 
 def read_file(path: str) -> str:
@@ -11,6 +13,8 @@ def read_file(path: str) -> str:
 
 
 def write_file(path: str, content: str) -> str:
+    if IS_VERCEL:
+        return "Error: cannot write files on Vercel (read-only filesystem). Use /tmp/ if needed for temporary files."
     path = Path(path).resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -18,6 +22,8 @@ def write_file(path: str, content: str) -> str:
 
 
 def run_command(command: str, workdir: str = "") -> str:
+    if IS_VERCEL:
+        return "Error: shell commands are not available on Vercel (serverless sandbox restriction)."
     cwd = Path(workdir).resolve() if workdir else None
     result = subprocess.run(
         command,
@@ -48,6 +54,8 @@ def web_search(query: str) -> str:
 
 
 def git_operation(args: str, workdir: str = "") -> str:
+    if IS_VERCEL:
+        return "Error: git operations are not available on Vercel (serverless sandbox restriction)."
     cwd = Path(workdir).resolve() if workdir else None
     cmd = f"git {args}"
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)

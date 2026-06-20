@@ -72,17 +72,25 @@ TOOL_MAP = {
     "git_operation": tools.git_operation,
 }
 
-SYSTEM_PROMPT = """You are an AI coding agent that helps users with software development.
+VERCEL_WARNING = (
+    "NOTE: You are running on Vercel (serverless). The write_file, run_command, and git_operation tools "
+    "are NOT available. Only read_file and web_search work. For code generation, just output the code "
+    "in your response and tell the user to save it locally."
+) if config.IS_VERCEL else ""
+
+SYSTEM_PROMPT = f"""You are an AI coding agent that helps users with software development.
 
 You have access to tools for:
-- Reading and writing files
+- Reading files from the filesystem
+- Writing files (create/edit code)
 - Running shell commands
 - Searching the web
 - Running git operations
 
 Think step by step. Use tools as needed to accomplish the user's goals.
 When writing code, ensure correctness and follow best practices.
-When running commands, check output and handle errors."""
+When running commands, check output and handle errors appropriately.
+{VERCEL_WARNING}"""
 
 
 class CodingAgent:
@@ -129,9 +137,3 @@ class CodingAgent:
             if block.type == "text":
                 text_parts.append(block.text)
         return "\n".join(text_parts)
-
-    def get_history(self) -> List[dict]:
-        return self.messages
-
-    def reset(self) -> None:
-        self.messages = []

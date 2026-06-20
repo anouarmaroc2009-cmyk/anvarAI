@@ -1,18 +1,28 @@
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from typing import List, Optional
 import config
 from agent import CodingAgent
 
+IS_VERCEL = os.environ.get("VERCEL", "") == "1"
+
 app = FastAPI(title="AI Coding Agent", version="1.0.0")
-agent = CodingAgent()
+
+
+class HistoryItem(BaseModel):
+    role: str
+    content: str
 
 
 class ChatRequest(BaseModel):
     message: str
+    history: Optional[List[HistoryItem]] = []
 
 
 class ChatResponse(BaseModel):
     response: str
+    history: List[dict]
 
 
 @app.get("/health")
@@ -23,38 +33,19 @@ async def health():
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     if not config.ANTHROPIC_API_KEY:
-        raise HTTPException(500, "ANTHROPIC_API_KEY not set")
+        raise HTTPException(500, "ANTHROPIC_API_KEY not set - add it in Vercel Environment Variables")
     try:
+        agent = CodingAgent()
+        for h in (req.history or []):
+            agent.messages.append({"role": h.role, "content": h.content})
         result = agent.process_message(req.message)
-        return ChatResponse(response=result)
+        history_out = [
+            {"role": m["role"], "content": m["content"] if isinstance(m["content"], str) else "(tool call)"}
+            for m in agent.messages
+        ]
+        return ChatResponse(response=result, history=history_out)
     except Exception as e:
         raise HTTPException(500, str(e))
-
-
-@app.get("/history")
-async def history():
-    raw = agent.get_history()
-    cleaned = []
-    for m in raw:
-        if isinstance(m["content"], list):
-            items = []
-            for b in m["content"]:
-                if isinstance(b, dict):
-                    items.append(b)
-                elif b.type == "tool_use":
-                    items.append({"type": "tool_use", "name": b.name, "input": b.input})
-                else:
-                    items.append({"type": "text", "text": b.text})
-            cleaned.append({"role": m["role"], "content": items})
-        else:
-            cleaned.append({"role": m["role"], "content": m["content"]})
-    return {"messages": cleaned}
-
-
-@app.post("/reset")
-async def reset():
-    agent.reset()
-    return {"status": "conversation reset"}
 
 
 if __name__ == "__main__":
