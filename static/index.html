@@ -6,106 +6,200 @@
 <title>Anvar AI - Coding Agent</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-  @keyframes pulse { 0%,100% { transform: scale(1); opacity: .5; } 50% { transform: scale(1.05); opacity: .8; } }
-  @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-  @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(0deg); } 33% { transform: translateY(-15px) rotate(1deg); } 66% { transform: translateY(-5px) rotate(-1deg); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); opacity: .4; } 50% { transform: scale(1.08); opacity: .7; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideInLeft { from { opacity: 0; transform: translateX(-25px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(25px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-10px); } }
+  @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
   :root {
-    --bg: #0a0a1a; --surface: rgba(255,255,255,0.04); --border: rgba(255,255,255,0.08);
-    --text: #e2e8f0; --text-muted: #94a3b8;
+    --bg: #0a0a1a; --surface: rgba(255,255,255,0.04); --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08); --border-hover: rgba(255,255,255,0.15);
+    --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #475569;
     --accent: #a78bfa; --accent-glow: rgba(167,139,250,0.15);
+    --accent-2: #7c3aed; --accent-gradient: linear-gradient(135deg, #7c3aed, #a78bfa);
     --user-bg: linear-gradient(135deg, #7c3aed, #a78bfa); --user-text: #fff;
     --bot-bg: rgba(255,255,255,0.04); --bot-border: rgba(167,139,250,0.15);
-    --shadow: 0 4px 24px rgba(0,0,0,0.2);
-    --font: 'Inter','Segoe UI',-apple-system,sans-serif; --radius: 16px; --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    --font: 'Inter','Segoe UI',-apple-system,sans-serif; --radius: 16px; --radius-sm: 10px; --radius-full: 999px;
   }
   html,body { height: 100%; }
   body {
     font-family: var(--font); background: var(--bg); color: var(--text);
     display: flex; flex-direction: column; overflow: hidden;
+    transition: background .4s, color .4s;
   }
+
   .bg-shapes { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-  .bg-shapes .shape { position: absolute; border-radius: 50%; }
-  .bg-shapes .shape:nth-child(1) { width: 500px; height: 500px; background: radial-gradient(circle, rgba(124,58,237,0.08), transparent 70%); top: -200px; left: -100px; animation: float 10s ease-in-out infinite; }
-  .bg-shapes .shape:nth-child(2) { width: 300px; height: 300px; background: radial-gradient(circle, rgba(167,139,250,0.06), transparent 70%); bottom: 50px; right: -80px; animation: float 12s ease-in-out infinite; animation-delay: -4s; }
-  .bg-shapes .shape:nth-child(3) { width: 200px; height: 200px; background: radial-gradient(circle, rgba(99,102,241,0.05), transparent 70%); top: 40%; left: 60%; animation: pulse 8s ease-in-out infinite; }
+  .bg-shapes .shape { position: absolute; border-radius: 50%; transition: all .6s; }
+  .bg-shapes .shape:nth-child(1) { width: 520px; height: 520px; background: radial-gradient(circle, rgba(124,58,237,0.07), transparent 70%); top: -200px; left: -120px; animation: float 12s ease-in-out infinite; }
+  .bg-shapes .shape:nth-child(2) { width: 350px; height: 350px; background: radial-gradient(circle, rgba(167,139,250,0.05), transparent 70%); bottom: 30px; right: -80px; animation: float 14s ease-in-out infinite; animation-delay: -5s; }
+  .bg-shapes .shape:nth-child(3) { width: 200px; height: 200px; background: radial-gradient(circle, rgba(99,102,241,0.04), transparent 70%); top: 35%; left: 60%; animation: pulse 9s ease-in-out infinite; }
+  .bg-shapes .shape:nth-child(4) { width: 150px; height: 150px; background: radial-gradient(circle, rgba(236,72,153,0.04), transparent 70%); bottom: 40%; left: 10%; animation: float 11s ease-in-out infinite; animation-delay: -2s; }
+
   header {
-    position: relative; z-index: 1; padding: 14px 24px;
-    background: var(--surface); backdrop-filter: blur(20px);
+    position: relative; z-index: 10; padding: 12px 20px;
+    background: var(--surface); backdrop-filter: blur(24px);
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    gap: 12px;
   }
-  header h1 { font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
-  header h1 .logo { width: 32px; height: 32px; background: linear-gradient(135deg,#7c3aed,#a78bfa); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; }
-  .model-badge { font-size: 11px; background: rgba(167,139,250,0.12); color: var(--accent); padding: 3px 10px; border-radius: 20px; font-weight: 600; letter-spacing: .3px; }
-  .header-actions { display: flex; align-items: center; gap: 10px; }
-  .btn-outline {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text-muted); padding: 7px 16px;
-    border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;
-    transition: all .3s ease;
+  header .left { display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 17px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; letter-spacing: -.3px; }
+  header h1 .logo { width: 30px; height: 30px; background: var(--accent-gradient); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; color: white; box-shadow: 0 2px 12px rgba(124,58,237,0.3); }
+  .header-actions { display: flex; align-items: center; gap: 6px; }
+
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: transparent; color: var(--text-muted); cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 16px; transition: all .25s;
   }
-  .btn-outline:hover { background: var(--accent-glow); border-color: var(--accent); color: var(--text); }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-hover); transform: translateY(-1px); }
+  .icon-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+  /* Settings panel */
+  #settingsPanel {
+    position: fixed; top: 0; right: -360px; width: 320px; height: 100%; z-index: 100;
+    background: rgba(10,10,26,0.95); backdrop-filter: blur(32px);
+    border-left: 1px solid var(--border); padding: 20px;
+    transition: right .35s cubic-bezier(.4,0,.2,1);
+    display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
+  }
+  #settingsPanel.open { right: 0; }
+  #settingsPanel .close { align-self: flex-end; }
+  #settingsPanel h2 { font-size: 15px; font-weight: 600; color: var(--text); }
+  #settingsPanel .group { display: flex; flex-direction: column; gap: 8px; }
+  #settingsPanel .group label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  #settingsPanel .group .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .color-swatch {
+    width: 36px; height: 36px; border-radius: var(--radius-sm); border: 2px solid transparent;
+    cursor: pointer; transition: all .2s; position: relative;
+  }
+  .color-swatch:hover { transform: scale(1.12); }
+  .color-swatch.active { border-color: white; box-shadow: 0 0 12px rgba(255,255,255,0.2); }
+  .color-swatch.active::after { content: '\2713'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: 700; }
+
+  .settings-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.4); opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .settings-overlay.show { opacity: 1; pointer-events: auto; }
+
   #chat {
     position: relative; z-index: 1; flex: 1; overflow-y: auto;
-    padding: 20px 24px; display: flex; flex-direction: column; gap: 16px;
+    padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;
     scroll-behavior: smooth;
   }
-  #chat::-webkit-scrollbar { width: 5px; }
-  #chat::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 3px; }
-  .msg { display: flex; flex-direction: column; max-width: 80%; animation: slideUp .4s ease; }
+  #chat::-webkit-scrollbar { width: 4px; }
+  #chat::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.25); border-radius: 3px; }
+  #chat::-webkit-scrollbar-track { background: transparent; }
+  .msg { display: flex; flex-direction: column; max-width: 80%; animation: slideUp .35s ease; }
   .msg.user { align-self: flex-end; animation-name: slideInRight; }
   .msg.bot { align-self: flex-start; animation-name: slideInLeft; }
   .msg .bubble { padding: 14px 20px; border-radius: var(--radius); font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; }
   .msg.user .bubble { background: var(--user-bg); color: var(--user-text); border-bottom-right-radius: 4px; }
   .msg.bot .bubble { background: var(--bot-bg); backdrop-filter: blur(10px); border: 1px solid var(--bot-border); border-bottom-left-radius: 4px; box-shadow: var(--shadow); }
   .msg .bubble code { background: rgba(167,139,250,0.15); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-  .msg .bubble pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin: 8px 0; overflow-x: auto; font-size: 13px; }
+  .msg .bubble pre { background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin: 8px 0; overflow-x: auto; font-size: 13px; }
   .msg .bubble pre code { background: none; padding: 0; color: inherit; }
-  .tool-indicator { font-size: 12px; color: var(--accent); margin-top: 4px; padding: 4px 10px; background: rgba(167,139,250,0.08); border-radius: 6px; display: inline-block; }
-  .typing-indicator { align-self: flex-start; display: flex; align-items: center; gap: 5px; padding: 16px 22px; background: var(--bot-bg); border: 1px solid var(--bot-border); border-radius: var(--radius); border-bottom-left-radius: 4px; box-shadow: var(--shadow); }
-  .typing-indicator span { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); animation: bounce 1.4s infinite; opacity: .4; }
-  .typing-indicator span:nth-child(2) { animation-delay: .16s; opacity: .6; }
-  .typing-indicator span:nth-child(3) { animation-delay: .32s; opacity: .8; }
-  .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 16px; animation: slideUp .6s ease; }
-  .empty .icon-wrap { width: 80px; height: 80px; background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(167,139,250,0.1)); border-radius: 24px; display: flex; align-items: center; justify-content: center; animation: float 6s ease-in-out infinite; border: 1px solid var(--border); }
-  .empty .icon-wrap .icon { font-size: 36px; }
-  .empty h2 { font-size: 24px; font-weight: 700; color: var(--text); }
-  .empty p { font-size: 14px; max-width: 420px; text-align: center; line-height: 1.7; }
-  .empty .model-note { font-size: 12px; color: var(--accent); background: rgba(167,139,250,0.08); padding: 4px 14px; border-radius: 20px; }
+  .tool-indicator {
+    font-size: 12px; color: var(--accent); margin-top: 4px; padding: 4px 10px;
+    background: rgba(167,139,250,0.08); border-radius: 6px; display: inline-block;
+    animation: fadeIn .2s ease;
+  }
+  .typing-indicator { align-self: flex-start; display: flex; align-items: center; gap: 5px; padding: 16px 22px; background: var(--bot-bg); border: 1px solid var(--bot-border); border-radius: var(--radius); border-bottom-left-radius: 4px; box-shadow: var(--shadow); animation: slideUp .25s ease; }
+  .typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: bounce 1.4s infinite; opacity: .3; }
+  .typing-indicator span:nth-child(2) { animation-delay: .16s; opacity: .5; }
+  .typing-indicator span:nth-child(3) { animation-delay: .32s; opacity: .7; }
+  .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); gap: 14px; animation: slideUp .5s ease; }
+  .empty .icon-wrap { width: 72px; height: 72px; background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(167,139,250,0.08)); border-radius: 22px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); animation: float 7s ease-in-out infinite; }
+  .empty .icon-wrap .icon { font-size: 32px; }
+  .empty h2 { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+  .empty p { font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6; }
   .empty .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
-  .empty .suggestions button { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); font-size: 13px; padding: 8px 18px; border-radius: 20px; cursor: pointer; transition: all .3s ease; }
-  .empty .suggestions button:hover { background: rgba(167,139,250,0.12); color: var(--accent); border-color: var(--accent); }
-  #input-area { position: relative; z-index: 1; padding: 14px 24px 18px; background: var(--surface); backdrop-filter: blur(20px); border-top: 1px solid var(--border); flex-shrink: 0; }
+  .empty .suggestions button {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    font-size: 13px; padding: 7px 18px; border-radius: 20px; cursor: pointer;
+    transition: all .25s; position: relative; overflow: hidden;
+  }
+  .empty .suggestions button:hover { background: rgba(167,139,250,0.1); color: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+  #input-area { position: relative; z-index: 1; padding: 12px 20px 16px; background: var(--surface); backdrop-filter: blur(24px); border-top: 1px solid var(--border); flex-shrink: 0; }
   #input-row { display: flex; gap: 10px; align-items: flex-end; max-width: 900px; margin: 0 auto; }
-  #input { flex: 1; background: rgba(255,255,255,0.04); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; color: var(--text); font-size: 14px; font-family: var(--font); outline: none; resize: none; min-height: 48px; max-height: 140px; line-height: 1.5; transition: all .2s ease; }
-  #input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  #input::placeholder { color: #475569; }
-  #send { background: linear-gradient(135deg,#7c3aed,#a78bfa); border: none; border-radius: var(--radius); padding: 12px 24px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .3s ease; white-space: nowrap; height: 48px; box-shadow: 0 4px 16px rgba(124,58,237,0.25); display: flex; align-items: center; gap: 6px; }
-  #send:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,58,237,0.35); }
-  #send:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-  @media (max-width: 640px) { header { padding: 12px 16px; } #chat { padding: 14px 16px; } .msg { max-width: 92%; } #input-area { padding: 12px 16px; } }
+  #input {
+    flex: 1; background: rgba(255,255,255,0.04); backdrop-filter: blur(10px);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 11px 16px; color: var(--text); font-size: 14px; font-family: var(--font);
+    outline: none; resize: none; min-height: 44px; max-height: 130px; line-height: 1.5; transition: all .25s;
+  }
+  #input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: rgba(255,255,255,0.06); }
+  #input::placeholder { color: var(--text-dim); }
+  #send {
+    background: var(--accent-gradient); border: none; border-radius: var(--radius);
+    padding: 11px 22px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all .25s; white-space: nowrap; height: 44px; display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.25);
+  }
+  #send:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.35); }
+  #send:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+  @media (max-width: 640px) {
+    header { padding: 10px 14px; } #chat { padding: 12px 14px; } .msg { max-width: 92%; } #input-area { padding: 10px 14px 14px; }
+  }
 </style>
 </head>
 <body>
-<div class="bg-shapes"><div class="shape"></div><div class="shape"></div><div class="shape"></div></div>
+<div class="bg-shapes" id="bgShapes"><div class="shape"></div><div class="shape"></div><div class="shape"></div><div class="shape"></div></div>
+<div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
 
 <header>
-  <h1><span class="logo">&#x2699;</span> Anvar AI <span class="model-badge">Big Pickle</span></h1>
+  <div class="left">
+    <h1><span class="logo">&#x2699;</span> Anvar AI</h1>
+  </div>
   <div class="header-actions">
-    <button class="btn-outline" onclick="resetChat()">&#x21BB; New Chat</button>
+    <button class="icon-btn" onclick="toggleSettings()" id="settingsBtn" title="Customize">&#x2699;</button>
+    <button class="icon-btn" onclick="resetChat()" title="New chat">&#x21BB;</button>
   </div>
 </header>
+
+<div id="settingsPanel">
+  <button class="icon-btn close" onclick="toggleSettings()" style="margin-bottom:4px">&#x2715;</button>
+  <h2>Customize</h2>
+  <div class="group">
+    <label>Accent Color</label>
+    <div class="row" id="accentColors">
+      <div class="color-swatch active" style="background:#a78bfa" data-color="#a78bfa" onclick="setAccent('#a78bfa',this)"></div>
+      <div class="color-swatch" style="background:#6366f1" data-color="#6366f1" onclick="setAccent('#6366f1',this)"></div>
+      <div class="color-swatch" style="background:#06b6d4" data-color="#06b6d4" onclick="setAccent('#06b6d4',this)"></div>
+      <div class="color-swatch" style="background:#10b981" data-color="#10b981" onclick="setAccent('#10b981',this)"></div>
+      <div class="color-swatch" style="background:#f59e0b" data-color="#f59e0b" onclick="setAccent('#f59e0b',this)"></div>
+      <div class="color-swatch" style="background:#ef4444" data-color="#ef4444" onclick="setAccent('#ef4444',this)"></div>
+      <div class="color-swatch" style="background:#ec4899" data-color="#ec4899" onclick="setAccent('#ec4899',this)"></div>
+      <div class="color-swatch" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)" data-color="gradient" onclick="setAccent('gradient',this)"></div>
+    </div>
+  </div>
+  <div class="group">
+    <label>Background</label>
+    <div class="row" id="bgOptions">
+      <div class="color-swatch active" style="background:#0a0a1a" data-bg="#0a0a1a" onclick="setBg('#0a0a1a',this)"></div>
+      <div class="color-swatch" style="background:#0f172a" data-bg="#0f172a" onclick="setBg('#0f172a',this)"></div>
+      <div class="color-swatch" style="background:#1a1a2e" data-bg="#1a1a2e" onclick="setBg('#1a1a2e',this)"></div>
+      <div class="color-swatch" style="background:#111827" data-bg="#111827" onclick="setBg('#111827',this)"></div>
+    </div>
+  </div>
+  <div class="group">
+    <label>Animations</label>
+    <div class="row">
+      <button class="icon-btn" style="width:auto;padding:6px 14px;font-size:12px" onclick="toggleAnimations()" id="animToggle">On</button>
+    </div>
+  </div>
+</div>
 
 <div id="chat">
   <div class="empty" id="emptyState">
     <div class="icon-wrap"><span class="icon">&#x1F916;</span></div>
     <h2>Anvar AI</h2>
-    <p>Coding agent powered by Big Pickle. I can write code, run commands, search the web, and manage git repos.</p>
-    <div class="model-note">&#x26A1; Free via OpenCode Zen</div>
+    <p>Coding agent. I can write code, run commands, search the web, and manage git repos.</p>
     <div class="suggestions">
       <button onclick="suggest('write a python prime number checker')">Prime checker</button>
       <button onclick="suggest('list files')">List files</button>
@@ -124,6 +218,81 @@
 
 <script>
 const API = window.location.origin;
+let animEnabled = true;
+
+function loadSettings() {
+  const accent = localStorage.getItem('anvar_accent');
+  const bg = localStorage.getItem('anvar_bg');
+  const anim = localStorage.getItem('anvar_anim');
+  if (accent) {
+    document.querySelectorAll('#accentColors .color-swatch').forEach(s => s.classList.remove('active'));
+    const target = document.querySelector(`#accentColors .color-swatch[data-color="${accent}"]`);
+    if (target) { target.classList.add('active'); applyAccent(accent); }
+    else { applyAccent(accent); }
+  }
+  if (bg) {
+    document.querySelectorAll('#bgOptions .color-swatch').forEach(s => s.classList.remove('active'));
+    const target = document.querySelector(`#bgOptions .color-swatch[data-bg="${bg}"]`);
+    if (target) target.classList.add('active');
+    document.body.style.background = bg;
+  }
+  if (anim === 'off') { animEnabled = false; document.getElementById('animToggle').textContent = 'Off'; toggleAnimations(true); }
+}
+loadSettings();
+
+function applyAccent(color) {
+  const root = document.documentElement;
+  if (color === 'gradient') {
+    root.style.setProperty('--accent', '#a78bfa');
+    root.style.setProperty('--accent-2', '#7c3aed');
+    root.style.setProperty('--accent-gradient', 'linear-gradient(135deg, #7c3aed, #a78bfa)');
+    root.style.setProperty('--user-bg', 'linear-gradient(135deg, #7c3aed, #a78bfa)');
+  } else {
+    root.style.setProperty('--accent', color);
+    root.style.setProperty('--accent-2', color);
+    root.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${color}, ${color}dd)`);
+    root.style.setProperty('--user-bg', `linear-gradient(135deg, ${color}, ${color}dd)`);
+  }
+  root.style.setProperty('--accent-glow', `${color}22`);
+  root.style.setProperty('--bot-border', `${color}33`);
+}
+
+function setAccent(color, el) {
+  document.querySelectorAll('#accentColors .color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  applyAccent(color);
+  localStorage.setItem('anvar_accent', color);
+}
+
+function setBg(color, el) {
+  document.querySelectorAll('#bgOptions .color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.body.style.background = color;
+  localStorage.setItem('anvar_bg', color);
+}
+
+function toggleAnimations(skipSave) {
+  animEnabled = !animEnabled;
+  const btn = document.getElementById('animToggle');
+  btn.textContent = animEnabled ? 'On' : 'Off';
+  const shapes = document.getElementById('bgShapes');
+  const chat = document.getElementById('chat');
+  const empty = document.getElementById('emptyState');
+  if (animEnabled) {
+    shapes.style.display = '';
+    chat.style.scrollBehavior = 'smooth';
+    if (empty) empty.style.animation = '';
+  } else {
+    shapes.style.display = 'none';
+    chat.style.scrollBehavior = 'auto';
+  }
+  if (!skipSave) localStorage.setItem('anvar_anim', animEnabled ? 'on' : 'off');
+}
+
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('open');
+  document.getElementById('settingsOverlay').classList.toggle('show');
+}
 
 async function sendMessage() {
   const input = document.getElementById('input');
@@ -203,8 +372,7 @@ function resetChat() {
     <div class="empty" id="emptyState">
       <div class="icon-wrap"><span class="icon">&#x1F916;</span></div>
       <h2>Anvar AI</h2>
-      <p>Coding agent powered by Big Pickle. I can write code, run commands, search the web, and manage git repos.</p>
-      <div class="model-note">&#x26A1; Free via OpenCode Zen</div>
+      <p>Coding agent. I can write code, run commands, search the web, and manage git repos.</p>
       <div class="suggestions">
         <button onclick="suggest('write a python prime number checker')">Prime checker</button>
         <button onclick="suggest('list files')">List files</button>
@@ -216,7 +384,7 @@ function resetChat() {
 }
 
 document.getElementById('input').addEventListener('input', function() {
-  this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  this.style.height = 'auto'; this.style.height = Math.min(this.scrollHeight, 130) + 'px';
 });
 </script>
 </body>
