@@ -17,14 +17,14 @@
   @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
   :root {
-    --bg: #0a0a1a; --surface: rgba(255,255,255,0.04); --surface-hover: rgba(255,255,255,0.07);
-    --border: rgba(255,255,255,0.08); --border-hover: rgba(255,255,255,0.15);
-    --text: #e2e8f0; --text-muted: #94a3b8; --text-dim: #475569;
+    --bg: #ffffff; --surface: rgba(255,255,255,0.8); --surface-hover: rgba(255,255,255,0.9);
+    --border: rgba(0,0,0,0.08); --border-hover: rgba(0,0,0,0.15);
+    --text: #0f172a; --text-muted: #64748b; --text-dim: #94a3b8;
     --accent: #a78bfa; --accent-glow: rgba(167,139,250,0.15);
     --accent-2: #7c3aed; --accent-gradient: linear-gradient(135deg, #7c3aed, #a78bfa);
     --user-bg: linear-gradient(135deg, #7c3aed, #a78bfa); --user-text: #fff;
-    --bot-bg: rgba(255,255,255,0.04); --bot-border: rgba(167,139,250,0.15);
-    --shadow: 0 4px 24px rgba(0,0,0,0.3);
+    --bot-bg: rgba(255,255,255,0.8); --bot-border: rgba(167,139,250,0.2);
+    --shadow: 0 4px 24px rgba(0,0,0,0.06);
     --font: 'Inter','Segoe UI',-apple-system,sans-serif; --radius: 16px; --radius-sm: 10px; --radius-full: 999px;
   }
   html,body { height: 100%; }
@@ -36,7 +36,7 @@
 
   .bg-shapes { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
   .bg-shapes .shape { position: absolute; border-radius: 50%; transition: all .6s; }
-  .bg-shapes .shape:nth-child(1) { width: 520px; height: 520px; background: radial-gradient(circle, rgba(124,58,237,0.07), transparent 70%); top: -200px; left: -120px; animation: float 12s ease-in-out infinite; }
+  .bg-shapes .shape:nth-child(1) { width: 520px; height: 520px; background: radial-gradient(circle, rgba(124,58,237,0.06), transparent 70%); top: -200px; left: -120px; animation: float 12s ease-in-out infinite; }
   .bg-shapes .shape:nth-child(2) { width: 350px; height: 350px; background: radial-gradient(circle, rgba(167,139,250,0.05), transparent 70%); bottom: 30px; right: -80px; animation: float 14s ease-in-out infinite; animation-delay: -5s; }
   .bg-shapes .shape:nth-child(3) { width: 200px; height: 200px; background: radial-gradient(circle, rgba(99,102,241,0.04), transparent 70%); top: 35%; left: 60%; animation: pulse 9s ease-in-out infinite; }
   .bg-shapes .shape:nth-child(4) { width: 150px; height: 150px; background: radial-gradient(circle, rgba(236,72,153,0.04), transparent 70%); bottom: 40%; left: 10%; animation: float 11s ease-in-out infinite; animation-delay: -2s; }
@@ -64,7 +64,7 @@
   /* Settings panel */
   #settingsPanel {
     position: fixed; top: 0; right: -360px; width: 320px; height: 100%; z-index: 100;
-    background: rgba(10,10,26,0.95); backdrop-filter: blur(32px);
+    background: var(--surface); backdrop-filter: blur(32px);
     border-left: 1px solid var(--border); padding: 20px;
     transition: right .35s cubic-bezier(.4,0,.2,1);
     display: flex; flex-direction: column; gap: 16px; overflow-y: auto;
@@ -181,10 +181,14 @@
   <div class="group">
     <label>Background</label>
     <div class="row" id="bgOptions">
-      <div class="color-swatch active" style="background:#0a0a1a" data-bg="#0a0a1a" onclick="setBg('#0a0a1a',this)"></div>
-      <div class="color-swatch" style="background:#0f172a" data-bg="#0f172a" onclick="setBg('#0f172a',this)"></div>
-      <div class="color-swatch" style="background:#1a1a2e" data-bg="#1a1a2e" onclick="setBg('#1a1a2e',this)"></div>
-      <div class="color-swatch" style="background:#111827" data-bg="#111827" onclick="setBg('#111827',this)"></div>
+      <div class="color-swatch active" style="background:#ffffff;border:2px solid #cbd5e1" data-bg="#ffffff" data-theme="light" onclick="setBg('#ffffff',this)"></div>
+      <div class="color-swatch" style="background:#f1f5f9;border:2px solid #cbd5e1" data-bg="#f1f5f9" data-theme="light" onclick="setBg('#f1f5f9',this)"></div>
+      <div class="color-swatch" style="background:#e0f2fe;border:2px solid #bae6fd" data-bg="#e0f2fe" data-theme="light" onclick="setBg('#e0f2fe',this)"></div>
+      <div class="color-swatch" style="background:#fce7f3;border:2px solid #fbcfe8" data-bg="#fce7f3" data-theme="light" onclick="setBg('#fce7f3',this)"></div>
+      <div class="color-swatch" style="background:#0a0a1a" data-bg="#0a0a1a" data-theme="dark" onclick="setBg('#0a0a1a',this)"></div>
+      <div class="color-swatch" style="background:#0f172a" data-bg="#0f172a" data-theme="dark" onclick="setBg('#0f172a',this)"></div>
+      <div class="color-swatch" style="background:#1a1a2e" data-bg="#1a1a2e" data-theme="dark" onclick="setBg('#1a1a2e',this)"></div>
+      <div class="color-swatch" style="background:#111827" data-bg="#111827" data-theme="dark" onclick="setBg('#111827',this)"></div>
     </div>
   </div>
   <div class="group">
@@ -224,6 +228,10 @@ function loadSettings() {
   const accent = localStorage.getItem('anvar_accent');
   const bg = localStorage.getItem('anvar_bg');
   const anim = localStorage.getItem('anvar_anim');
+  if (!bg) {
+    document.querySelector('#bgOptions .color-swatch').classList.add('active');
+    document.body.style.background = '#ffffff';
+  }
   if (accent) {
     document.querySelectorAll('#accentColors .color-swatch').forEach(s => s.classList.remove('active'));
     const target = document.querySelector(`#accentColors .color-swatch[data-color="${accent}"]`);
@@ -267,6 +275,32 @@ function setAccent(color, el) {
 function setBg(color, el) {
   document.querySelectorAll('#bgOptions .color-swatch').forEach(s => s.classList.remove('active'));
   el.classList.add('active');
+  const theme = el.dataset.theme || 'dark';
+  const root = document.documentElement;
+  if (theme === 'light') {
+    root.style.setProperty('--bg', color);
+    root.style.setProperty('--text', '#0f172a');
+    root.style.setProperty('--text-muted', '#64748b');
+    root.style.setProperty('--text-dim', '#94a3b8');
+    root.style.setProperty('--surface', 'rgba(255,255,255,0.8)');
+    root.style.setProperty('--surface-hover', 'rgba(255,255,255,0.95)');
+    root.style.setProperty('--border', 'rgba(0,0,0,0.08)');
+    root.style.setProperty('--border-hover', 'rgba(0,0,0,0.15)');
+    root.style.setProperty('--bot-bg', 'rgba(255,255,255,0.8)');
+    root.style.setProperty('--shadow', '0 4px 24px rgba(0,0,0,0.06)');
+    document.querySelector('.empty h2').style.color = '';
+  } else {
+    root.style.setProperty('--bg', color);
+    root.style.setProperty('--text', '#e2e8f0');
+    root.style.setProperty('--text-muted', '#94a3b8');
+    root.style.setProperty('--text-dim', '#475569');
+    root.style.setProperty('--surface', 'rgba(255,255,255,0.04)');
+    root.style.setProperty('--surface-hover', 'rgba(255,255,255,0.07)');
+    root.style.setProperty('--border', 'rgba(255,255,255,0.08)');
+    root.style.setProperty('--border-hover', 'rgba(255,255,255,0.15)');
+    root.style.setProperty('--bot-bg', 'rgba(255,255,255,0.04)');
+    root.style.setProperty('--shadow', '0 4px 24px rgba(0,0,0,0.3)');
+  }
   document.body.style.background = color;
   localStorage.setItem('anvar_bg', color);
 }
