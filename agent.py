@@ -102,10 +102,20 @@ TOOL_DEFS = [
 
 class CodingAgent:
     def __init__(self):
-        self.client = OpenAI(
-            base_url="https://opencode.ai/zen/v1",
-            api_key=config.OPENCODE_API_KEY,
-        )
+        self.client = None
+
+    def _get_client(self) -> OpenAI:
+        if self.client is None:
+            if not config.OPENCODE_API_KEY:
+                raise ValueError(
+                    "OPENCODE_API_KEY not set. "
+                    "Get one free at https://opencode.ai/zen"
+                )
+            self.client = OpenAI(
+                base_url="https://opencode.ai/zen/v1",
+                api_key=config.OPENCODE_API_KEY,
+            )
+        return self.client
 
     def _parse_tool_calls(self, choice) -> list[dict]:
         """Extract tool calls from an OpenAI chat completion choice."""
@@ -199,7 +209,7 @@ class CodingAgent:
                     tool_calls_accum = {}
                     finish_reason = None
 
-                    for chunk in self.client.chat.completions.create(**kwargs):
+                    for chunk in self._get_client().chat.completions.create(**kwargs):
                         if not chunk.choices:
                             continue
                         delta = chunk.choices[0].delta
@@ -251,7 +261,7 @@ class CodingAgent:
                         return
 
                 else:
-                    response = self.client.chat.completions.create(**kwargs)
+                    response = self._get_client().chat.completions.create(**kwargs)
                     choice = response.choices[0] if response.choices else None
                     if not choice:
                         yield {"type": "error", "content": "No response from model"}
