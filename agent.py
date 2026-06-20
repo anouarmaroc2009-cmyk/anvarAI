@@ -1,70 +1,77 @@
-from typing import List
-import anthropic
+from typing import Any
+from google import genai
+from google.genai import types
 import config
 import tools
 
-TOOL_DEFINITIONS = [
-    {
-        "name": "read_file",
-        "description": "Read the contents of a file from the local filesystem.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Absolute or relative path to the file"}
+TOOL_DEFS = [
+    types.FunctionDeclaration(
+        name="read_file",
+        description="Read the contents of a file from the local filesystem.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "path": types.Schema(type=types.Type.STRING, description="Path to the file"),
             },
-            "required": ["path"],
-        },
-    },
-    {
-        "name": "write_file",
-        "description": "Write content to a file. Creates parent directories if they don't exist.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "path": {"type": "string", "description": "Absolute or relative path to the file"},
-                "content": {"type": "string", "description": "Content to write to the file"},
+            required=["path"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="write_file",
+        description="Write content to a file. Creates parent directories if they don't exist.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "path": types.Schema(type=types.Type.STRING, description="Path to the file"),
+                "content": types.Schema(type=types.Type.STRING, description="Content to write"),
             },
-            "required": ["path", "content"],
-        },
-    },
-    {
-        "name": "run_command",
-        "description": "Execute a shell command and return its output.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "command": {"type": "string", "description": "Shell command to execute"},
-                "workdir": {"type": "string", "description": "Working directory for the command (optional)"},
+            required=["path", "content"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="run_command",
+        description="Execute a shell command and return its output.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "command": types.Schema(type=types.Type.STRING, description="Shell command to execute"),
+                "workdir": types.Schema(
+                    type=types.Type.STRING,
+                    description="Working directory (optional)",
+                ),
             },
-            "required": ["command"],
-        },
-    },
-    {
-        "name": "web_search",
-        "description": "Search the web for current information. Use this for documentation, APIs, or recent events.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "Search query"},
+            required=["command"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="web_search",
+        description="Search the web for current information.",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "query": types.Schema(type=types.Type.STRING, description="Search query"),
             },
-            "required": ["query"],
-        },
-    },
-    {
-        "name": "git_operation",
-        "description": "Run a git command (status, diff, add, commit, push, log, branch, etc.).",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "args": {"type": "string", "description": "Git arguments, e.g. 'status', 'log --oneline -5', 'diff'"},
-                "workdir": {"type": "string", "description": "Working directory (optional)"},
+            required=["query"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="git_operation",
+        description="Run a git command (status, diff, add, commit, push, log, branch, etc.).",
+        parameters=types.Schema(
+            type=types.Type.OBJECT,
+            properties={
+                "args": types.Schema(
+                    type=types.Type.STRING,
+                    description="Git arguments, e.g. 'status', 'log --oneline -5'",
+                ),
+                "workdir": types.Schema(type=types.Type.STRING, description="Working directory (optional)"),
             },
-            "required": ["args"],
-        },
-    },
+            required=["args"],
+        ),
+    ),
 ]
 
-TOOL_MAP = {
+TOOL_MAP: dict[str, Any] = {
     "read_file": tools.read_file,
     "write_file": tools.write_file,
     "run_command": tools.run_command,
@@ -88,51 +95,69 @@ When running commands, check output and handle errors appropriately."""
 
 class CodingAgent:
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        self.messages: List[dict] = []
+        self.client = genai.Client(api_key=config.GOOGLE_API_KEY)
+        self.messages: list[types.Content] = []
+        self.tool_config = types.Tool(function_declarations=TOOL_DEFS)
 
     def process_message(self, user_message: str) -> str:
-        self.messages.append({"role": "user", "content": user_message})
+        self.messages.append(types.Content(
+            role="user",
+            parts=[types.Part(text=user_message)],
+        ))
 
         while True:
-            response = self.client.messages.create(
+            response = self.client.models.generate_content(
                 model=config.MODEL,
-                max_tokens=config.MAX_TOKENS,
-                system=SYSTEM_PROMPT,
-                messages=self.messages,
-                tools=TOOL_DEFINITIONS,
+                contents=self.messages,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    tools=[self.tool_config],
+                    max_output_tokens=config.MAX_TOKENS,
+                ),
             )
 
-            self.messages.append({"role": "assistant", "content": response.content})
-
-            if response.stop_reason == "tool_use":
-                tool_results = []
-                for block in response.content:
-                    if block.type == "tool_use":
-                        handler = TOOL_MAP.get(block.name)
-                        if handler:
-                            result = handler(**block.input)
-                        else:
-                            result = f"Unknown tool: {block.name}"
-                        tool_results.append({
-                            "type": "tool_result",
-                            "tool_use_id": block.id,
-                            "content": str(result),
-                        })
-
-                if tool_results:
-                    self.messages.append({"role": "user", "content": tool_results})
-            else:
+            candidate = response.candidates[0]
+            if not candidate:
                 break
 
-        text_parts: List[str] = []
-        for block in self.messages[-1]["content"]:
-            if block.type == "text":
-                text_parts.append(block.text)
+            reply = candidate.content
+            self.messages.append(reply)
+
+            function_calls = [p for p in reply.parts if p.function_call]
+            if not function_calls:
+                break
+
+            result_parts = []
+            for part in function_calls:
+                fc = part.function_call
+                handler = TOOL_MAP.get(fc.name)
+                try:
+                    result = handler(**{k: v for k, v in fc.args.items()})
+                except Exception as e:
+                    result = f"Error: {e}"
+                result_parts.append(types.Part.from_function_response(
+                    name=fc.name,
+                    response={"result": str(result)},
+                ))
+
+            self.messages.append(types.Content(role="user", parts=result_parts))
+
+        text_parts = [p.text for p in self.messages[-1].parts if p.text]
         return "\n".join(text_parts)
 
-    def get_history(self) -> List[dict]:
-        return self.messages
+    def get_history(self) -> list[dict]:
+        cleaned = []
+        for msg in self.messages:
+            parts = []
+            for p in msg.parts:
+                if p.text:
+                    parts.append({"type": "text", "text": p.text})
+                elif p.function_call:
+                    parts.append({"type": "function_call", "name": p.function_call.name, "args": dict(p.function_call.args)})
+                elif p.function_response:
+                    parts.append({"type": "function_response", "name": p.function_response.name, "response": dict(p.function_response.response)})
+            cleaned.append({"role": msg.role, "parts": parts})
+        return cleaned
 
     def reset(self) -> None:
         self.messages = []

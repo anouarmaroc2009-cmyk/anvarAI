@@ -22,8 +22,12 @@ async def health():
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    if not config.ANTHROPIC_API_KEY:
-        raise HTTPException(500, "ANTHROPIC_API_KEY not set - add it in Railway Environment Variables")
+    if not config.GOOGLE_API_KEY:
+        raise HTTPException(
+            500,
+            "GOOGLE_API_KEY not set - add it in Railway Environment Variables "
+            "(get one free at https://aistudio.google.com/apikey)",
+        )
     try:
         result = agent.process_message(req.message)
         return ChatResponse(response=result)
@@ -33,22 +37,7 @@ async def chat(req: ChatRequest):
 
 @app.get("/history")
 async def history():
-    raw = agent.get_history()
-    cleaned = []
-    for m in raw:
-        if isinstance(m["content"], list):
-            items = []
-            for b in m["content"]:
-                if isinstance(b, dict):
-                    items.append(b)
-                elif b.type == "tool_use":
-                    items.append({"type": "tool_use", "name": b.name, "input": b.input})
-                else:
-                    items.append({"type": "text", "text": b.text})
-            cleaned.append({"role": m["role"], "content": items})
-        else:
-            cleaned.append({"role": m["role"], "content": m["content"]})
-    return {"messages": cleaned}
+    return {"messages": agent.get_history()}
 
 
 @app.post("/reset")
