@@ -1,7 +1,8 @@
+import json
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import config
 from agent import CodingAgent
@@ -44,6 +45,26 @@ async def chat(req: ChatRequest):
         return ChatResponse(response=result)
     except Exception as e:
         raise HTTPException(500, str(e))
+
+
+@app.post("/chat/stream")
+async def chat_stream(req: ChatRequest):
+    if not config.GOOGLE_API_KEY:
+        raise HTTPException(500, "GOOGLE_API_KEY not set")
+
+    async def event_stream():
+        for chunk in agent.process_message(req.message, stream=True):
+            yield f"data: {json.dumps(chunk)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/history")

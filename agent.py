@@ -101,7 +101,7 @@ class CodingAgent:
         self.messages: list[types.Content] = []
         self.tool_config = types.Tool(function_declarations=TOOL_DEFS)
 
-    def process_message(self, user_message: str) -> str:
+    def process_message(self, user_message: str, stream: bool = False):
         self.messages.append(types.Content(
             role="user",
             parts=[types.Part(text=user_message)],
@@ -109,31 +109,56 @@ class CodingAgent:
 
         while True:
             try:
-                response = self.client.models.generate_content(
-                    model=config.MODEL,
-                    contents=self.messages,
-                    config=types.GenerateContentConfig(
-                        system_instruction=SYSTEM_PROMPT,
-                        tools=[self.tool_config],
-                        max_output_tokens=config.MAX_TOKENS,
-                    ),
-                )
+                if stream:
+                    collected_parts = []
+                    for chunk in self.client.models.generate_content_stream(
+                        model=config.MODEL,
+                        contents=self.messages,
+                        config=types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT,
+                            tools=[self.tool_config],
+                            max_output_tokens=config.MAX_TOKENS,
+                        ),
+                    ):
+                        if not chunk.candidates:
+                            continue
+                        for p in chunk.candidates[0].content.parts:
+                            if p.text:
+                                yield {"type": "text", "content": p.text}
+                            collected_parts.append(p)
+                    response_content = types.Content(role="model", parts=collected_parts) if collected_parts else None
+                else:
+                    response = self.client.models.generate_content(
+                        model=config.MODEL,
+                        contents=self.messages,
+                        config=types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT,
+                            tools=[self.tool_config],
+                            max_output_tokens=config.MAX_TOKENS,
+                        ),
+                    )
+                    if not response.candidates:
+                        feedback = response.prompt_feedback
+                        reason = feedback.block_reason if feedback else "unknown"
+                        return f"Response blocked by safety filters ({reason})"
+                    candidate = response.candidates[0]
+                    if not candidate.content or not candidate.content.parts:
+                        break
+                    response_content = candidate.content
+
             except Exception as e:
-                return f"Gemini API error: {e}"
+                error = f"Gemini API error: {e}"
+                if stream:
+                    yield {"type": "error", "content": error}
+                    return
+                return error
 
-            if not response.candidates:
-                feedback = response.prompt_feedback
-                reason = feedback.block_reason if feedback else "unknown"
-                return f"Response blocked by safety filters ({reason})"
-
-            candidate = response.candidates[0]
-            if not candidate.content or not candidate.content.parts:
+            if not response_content:
                 break
 
-            reply = candidate.content
-            self.messages.append(reply)
+            self.messages.append(response_content)
+            function_calls = [p for p in response_content.parts if p.function_call]
 
-            function_calls = [p for p in reply.parts if p.function_call]
             if not function_calls:
                 break
 
@@ -153,13 +178,17 @@ class CodingAgent:
                     name=fc.name,
                     response={"result": str(result)},
                 ))
+                if stream:
+                    yield {"type": "tool", "name": fc.name, "content": str(result)[:200]}
 
             self.messages.append(types.Content(role="user", parts=result_parts))
 
-        if response.text:
-            return response.text
-        text_parts = [p.text for p in self.messages[-1].parts if p.text]
-        return "\n".join(text_parts) if text_parts else "(no text response)"
+        if stream:
+            yield {"type": "done"}
+        else:
+            text = response.text if response.text else ""
+            text_parts = [p.text for p in (response_content.parts if response_content else []) if p.text]
+            return text or "\n".join(text_parts) or "(no text response)"
 
     def get_history(self) -> list[dict]:
         cleaned = []
