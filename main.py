@@ -1,10 +1,21 @@
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import config
 from agent import CodingAgent
 
-app = FastAPI(title="AI Coding Agent", version="1.0.0")
+app = FastAPI(title="Anvar AI - Coding Agent", version="1.0.0")
 agent = CodingAgent()
+
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+    @app.get("/")
+    async def index():
+        return FileResponse(str(static_dir / "index.html"))
 
 
 class ChatRequest(BaseModel):
